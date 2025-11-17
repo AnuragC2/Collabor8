@@ -1,0 +1,21 @@
+# Node
+node_modules/
+npm-debug.log
+pnpm-lock.yaml
+yarn.lock
+
+# Environment files
+.env
+server/.env
+client/.env
+
+# Dist
+dist/
+build/
+
+# Logs
+*.log
+logs/
+
+# Cache
+.cache/
