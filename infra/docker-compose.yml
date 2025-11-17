@@ -1,0 +1,20 @@
+version: "3.9"
+services:
+  mongo:
+    image: mongo:6
+    container_name: collabor8-mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:7
+    container_name: collabor8-redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+volumes:
+  mongo_data:
