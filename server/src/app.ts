@@ -3,6 +3,7 @@ import cors from "cors";
 import authRoutes from "./modules/auth/auth.routes.js"
 import { errorHandler } from "./core/middleware/errorHandler.js";
 import userRoutes from "./modules/user/user.routes.js";
+import  taskRoutes  from './modules/task/task.routes.js'
 const app = express();
 
 app.use(cors());
@@ -17,6 +18,7 @@ app.use("/health", healthRoute);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/workspace", workspaceroutes)
 app.use("/api/v1/user", userRoutes);
+app.use("api/v1/task", taskRoutes);
 
 app.use(errorHandler);
 

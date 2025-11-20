@@ -32,5 +32,6 @@ taskSchema.index({ key: 1 }, { unique: true });
 taskSchema.index({ assigneeId: 1 });
 taskSchema.index({ status: 1 });
 taskSchema.index({ parentTaskId: 1 });
+taskSchema.index({ dueDate : 1});
 
 export const Task = model<ITask>("Task", taskSchema);
