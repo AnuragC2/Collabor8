@@ -13,6 +13,12 @@ app.use(
     credentials: true,
   })
 );
+app.use(
+    cors({
+        origin: "https://collabor8-five.vercel.app",
+        credentials: true,
+    })
+)
 app.use(express.json());
 
 // Health route
@@ -25,7 +31,7 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/workspace", workspaceroutes)
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/project", projectRoutes);
-app.use("api/v1/task", taskRoutes);
+app.use("/api/v1/task", taskRoutes);
 
 app.use(errorHandler);
 
