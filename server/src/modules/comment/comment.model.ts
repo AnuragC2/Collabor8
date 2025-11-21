@@ -1,4 +1,5 @@
 import { Schema, model } from 'mongoose';
+import { IComment } from './comment.IComment.js';
 
 const commentSchema = new Schema<IComment>({
   taskId: { type: Schema.Types.ObjectId, ref: "Task", required: true },
@@ -14,5 +15,6 @@ const commentSchema = new Schema<IComment>({
 commentSchema.index({ taskId: 1, createdAt: -1 });
 commentSchema.index({ workspaceId: 1 });
 commentSchema.index({ authorId: 1 });
+commentSchema.index({ parentCommentId: 1 });
 
 export const Comment = model<IComment>("Comment", commentSchema);

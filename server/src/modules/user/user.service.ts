@@ -1,6 +1,7 @@
 import { UserRepository } from "./user.repository.js";
 import { AppError } from "../../core/errors/AppError.js";
 import { Schema } from "mongoose";
+import { UserModel } from "./user.model.js";
 
 export class UserService {
     private repo: UserRepository;

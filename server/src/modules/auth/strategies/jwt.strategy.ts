@@ -3,6 +3,7 @@ import { ITokenStrategy, TokenPair } from './token.strategy.js';
 import { IUser } from '../../user/user.IUser.js';
 import config from '../../../config/env.js';
 import { Schema } from 'mongoose';
+import { UserRole } from '../../user/user.types.js';
 
 export class JwtTokenStrategy implements ITokenStrategy {
     generateTokens(user: IUser, sessionId: Schema.Types.ObjectId): TokenPair {
@@ -39,7 +40,7 @@ export class JwtTokenStrategy implements ITokenStrategy {
         const token = Token.toString();
         try {
             const decoded = jwt.verify(token, config.JWT_ACCESS_SECRET) as any;
-            return { userId: decoded.sub as Schema.Types.ObjectId, sessionId: decoded.sid as Schema.Types.ObjectId};
+            return { userId: decoded.sub as Schema.Types.ObjectId, sessionId: decoded.sid as Schema.Types.ObjectId, role: decoded.role as UserRole};
         } catch {
             return null;
         }

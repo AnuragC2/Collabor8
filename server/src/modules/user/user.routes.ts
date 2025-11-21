@@ -1,17 +1,17 @@
 import { Router } from "express";
-import requireAuth from "../../modules/auth/requireAuth.js";
-import { requireRole } from "../../core/middleware/requireRole.js";
+import { requireAuth } from "../auth/auth.middleware.js"
+import { requireRole } from "./user.middleware.js";
 import { UserController } from "./user.controller.js";
 
 const controller = new UserController();
-const router = Router();
+const userRoutes = Router();
 
-router.get("/me", requireAuth, controller.getMe);
+userRoutes.get("/me", requireAuth, controller.getMe);
 
-router.get("/", requireAuth, requireRole("Admin"), controller.listUsers);
+userRoutes.get("/", requireAuth, requireRole("Admin"), controller.listUsers);
 
-router.post("/", requireAuth, requireRole("Admin"), controller.createUser);
+userRoutes.post("/", requireAuth, requireRole("Admin"), controller.createUser);
 
-router.get("/:id", requireAuth, requireRole("Admin"), controller.getUserById);
+userRoutes.get("/:id", requireAuth, requireRole("Admin"), controller.getUserById);
 
-export default router;
+export default userRoutes;

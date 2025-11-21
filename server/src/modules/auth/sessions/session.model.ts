@@ -10,10 +10,10 @@ const sessionSchema = new Schema<SessionDocument>({
     ipAddress: { type: String },
     isRevoked: { type: Boolean, default: false },
     expiresAt: { type: Date, required: true },
-    lastUsedAt: { type: Date }, // NEW
+    lastUsedAt: { type: Date },
 }, { timestamps: true });
 
 sessionSchema.index({ userId: 1 });
-sessionSchema.index({ expiresAt: 1 }); // KEEP TTL here if you want auto-delete
+sessionSchema.index({ expiresAt: 1 });
 
 export const SessionModel = model<SessionDocument>('Session', sessionSchema);
