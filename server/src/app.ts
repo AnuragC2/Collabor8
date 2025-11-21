@@ -7,18 +7,28 @@ import  taskRoutes  from './modules/task/task.routes.js'
 import projectRoutes from "./modules/project/project.routes.js";
 const app = express();
 
+const allowedDomains = [
+  /\.vercel\.app$/,
+  /^http:\/\/localhost:5173$/, 
+];
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true); 
+
+      const isAllowed = allowedDomains.some(domain => domain.test(origin));
+      
+      if (isAllowed) {
+        callback(null, true); 
+      } else {
+        console.log(`CORS rejected origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'), false); 
+      }
+    },
     credentials: true,
   })
 );
-app.use(
-    cors({
-        origin: "https://collabor8-five.vercel.app",
-        credentials: true,
-    })
-)
 app.use(express.json());
 
 // Health route
