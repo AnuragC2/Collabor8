@@ -43,3 +43,16 @@ Main API Structure::
     ├── POST   /:taskId/assign                      - Assign task
     ├── POST   /:taskId/unassign                    - Unassign task
     └── DELETE /:taskId                             - Delete task
+
+    Comments Module: POST   /api/comments/task/:taskId/comments              - Create comment/reply
+GET    /api/comments/task/:taskId/comments              - Get task comments
+GET    /api/comments/task/:taskId/comments?includeReplies=true - Get with nested replies
+GET    /api/comments/task/:taskId/comments/count        - Get comment count
+GET    /api/comments/:commentId                         - Get specific comment
+GET    /api/comments/:commentId/replies                 - Get comment replies
+GET    /api/comments/:commentId/replies/count           - Get reply count
+PATCH  /api/comments/:commentId                         - Update comment
+DELETE /api/comments/:commentId                         - Delete comment & replies
+GET    /api/comments/workspace/:workspaceId/my-comments - Get user's comments
+GET    /api/comments/workspace/:workspaceId/recent-comments - Get recent comments
+GET    /api/comments/workspace/:workspaceId/search      - Search comments
