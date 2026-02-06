@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { CommentService } from './comment.service.js';
 import { AppError } from '../../core/errors/AppError.js';
-import { Schema } from 'mongoose';
+import { Types } from "mongoose";
 
 export class CommentController {
     private service: CommentService;
@@ -34,7 +34,7 @@ export class CommentController {
 
             const authorId = req.user!.id.toString();
 
-            const tid = new Schema.Types.ObjectId(taskId);
+            const tid = new Types.ObjectId(taskId);
             const comment = await this.service.createComment({
                     taskId: tid,
                     content,

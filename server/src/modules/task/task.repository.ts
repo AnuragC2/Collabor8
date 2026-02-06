@@ -220,6 +220,21 @@ export class TaskRepository {
         return await Task.countDocuments(query);
     }
 
+    async findIdsByProject(
+        projectId: string | Schema.Types.ObjectId
+    ): Promise<string[]> {
+        const tasks = await Task.find({ projectId }).select("_id");
+        return tasks.map(task => task._id.toString());
+    }
+
+    async deleteByProject(projectId: string | Schema.Types.ObjectId): Promise<void> {
+        await Task.deleteMany({ projectId });
+    }
+
+    async deleteByWorkspace(workspaceId: string | Schema.Types.ObjectId): Promise<void> {
+        await Task.deleteMany({ workspaceId });
+    }
+
     async delete(id: string | Schema.Types.ObjectId): Promise < void > {
         // Also delete all subtasks
         await Task.deleteMany({

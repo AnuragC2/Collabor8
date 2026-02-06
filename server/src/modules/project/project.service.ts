@@ -4,14 +4,17 @@ import { IProject } from "./project.IProject.js";
 import { ProjectStatus } from "./project.projectStatus.js";
 import { WorkspaceRole } from "../workspace/workspace.workspaceRole.js";
 import { AppError } from "../../core/errors/AppError.js";
-import { Schema } from 'mongoose';
+import { Types } from "mongoose";
+import { TaskRepository } from "../task/task.repository.js";
+import { CommentRepository } from "../comment/comment.repository.js";
+import { getObjectIdString } from "../../utils/id.ts";
 
 export interface CreateProjectDTO {
   workspaceId: string;
   name: string;
   key: string;
   description?: string;
-  leadId: Schema.Types.ObjectId;
+  leadId: Types.ObjectId | string;
   visibility?: "public" | "private";
   startDate?: Date;
   targetEndDate?: Date;
@@ -27,17 +30,21 @@ export interface UpdateProjectDTO {
 }
 
 export interface AddProjectMemberDTO {
-  userId: Schema.Types.ObjectId;
+  userId: Types.ObjectId | string;
   role?: "lead" | "member";
 }
 
 export class ProjectService {
   private repository: ProjectRepository;
   private workspaceService: WorkspaceService;
+  private taskRepository: TaskRepository;
+  private commentRepository: CommentRepository;
 
   constructor() {
     this.repository = new ProjectRepository();
     this.workspaceService = new WorkspaceService();
+    this.taskRepository = new TaskRepository();
+    this.commentRepository = new CommentRepository();
   }
 
   async createProject(data?: CreateProjectDTO, creatorId?: string): Promise<IProject> {
@@ -50,13 +57,13 @@ export class ProjectService {
         throw AppError.badRequest("creatorId cannot be null");
     }
     await this.workspaceService.verifyMembership(
-      data.workspaceId.toString(),
+      getObjectIdString(data.workspaceId),
       creatorId
     );
 
     // Verify creator has permission (owner/admin can create projects)
     const workspaceRole = await this.workspaceService.getMemberRole(
-      data.workspaceId.toString(),
+      getObjectIdString(data.workspaceId),
       creatorId
     );
 
@@ -78,11 +85,11 @@ export class ProjectService {
 
     // Verify lead is workspace member
     await this.workspaceService.verifyMembership(
-      data.workspaceId.toString(),
-      data.leadId.toString()
+      getObjectIdString(data.workspaceId),
+      getObjectIdString(data.leadId)
     );
 
-    const wid = new Schema.Types.ObjectId(data.workspaceId);
+    const wid = new Types.ObjectId(data.workspaceId);
     const project = await this.repository.create({
       ...data,
       workspaceId: wid,
@@ -140,7 +147,7 @@ export class ProjectService {
     }
 
     // Verify user can update project (lead, workspace owner/admin)
-    await this.verifyProjectEditAccess(projectId, userId, project.workspaceId.toString());
+    await this.verifyProjectEditAccess(projectId, userId, getObjectIdString(project.workspaceId));
 
     const updatedProject = await this.repository.update(projectId, data);
     if (!updatedProject) {
@@ -164,12 +171,12 @@ export class ProjectService {
     await this.verifyProjectEditAccess(
       projectId,
       requesterId,
-      project.workspaceId.toString()
+      getObjectIdString(project.workspaceId)
     );
 
     // Verify new member is in workspace
     await this.workspaceService.verifyMembership(
-      project.workspaceId.toString(),
+      getObjectIdString(project.workspaceId),
       memberData.userId.toString()
     );
 
@@ -213,7 +220,7 @@ export class ProjectService {
       (await this.hasProjectEditAccess(
         projectId,
         requesterId,
-        project.workspaceId.toString()
+        getObjectIdString(project.workspaceId)
       ));
 
     if (!canRemove) {
@@ -242,7 +249,7 @@ export class ProjectService {
     await this.verifyProjectEditAccess(
       projectId,
       requesterId,
-      project.workspaceId.toString()
+      getObjectIdString(project.workspaceId)
     );
 
     // If promoting to lead, demote current lead
@@ -274,7 +281,7 @@ export class ProjectService {
     await this.verifyProjectEditAccess(
       projectId,
       userId,
-      project.workspaceId.toString()
+      getObjectIdString(project.workspaceId)
     );
 
     const archivedProject = await this.repository.archive(projectId);
@@ -293,19 +300,23 @@ export class ProjectService {
 
     // Only workspace owner or project lead can delete
     const workspaceRole = await this.workspaceService.getMemberRole(
-      project.workspaceId.toString(),
+      getObjectIdString(project.workspaceId),
       userId
     );
 
     const isLead = project.leadId.toString() === userId;
     const canDelete =
       workspaceRole === WorkspaceRole.Owner ||
-      (workspaceRole === WorkspaceRole.Admin && isLead);
+      workspaceRole === WorkspaceRole.Admin ||
+      isLead;
 
     if (!canDelete) {
-      throw AppError.forbidden("Only workspace owner or project lead can delete project");
+      throw AppError.forbidden("Only workspace owner, workspace admin, or project lead can delete project");
     }
 
+    const taskIds = await this.taskRepository.findIdsByProject(projectId);
+    await this.commentRepository.deleteByTaskIds(taskIds);
+    await this.taskRepository.deleteByProject(projectId);
     await this.repository.delete(projectId);
   }
 
@@ -316,9 +327,11 @@ export class ProjectService {
       throw AppError.notFound("Project not found");
     }
 
+    const workspaceId = getObjectIdString(project.workspaceId);
+
     // Verify user is workspace member
     await this.workspaceService.verifyMembership(
-      project.workspaceId.toString(),
+      workspaceId,
       userId
     );
 
@@ -326,7 +339,7 @@ export class ProjectService {
     if (project.visibility === "private") {
       const isMember = await this.repository.isMember(projectId, userId);
       const workspaceRole = await this.workspaceService.getMemberRole(
-        project.workspaceId.toString(),
+        workspaceId,
         userId
       );
 

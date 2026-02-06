@@ -1,57 +1,58 @@
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
-  Switch,
-  FormControlLabel,
-  RadioGroup,
-  Radio,
-  Typography,
-} from "@mui/material";
-import { useState, useEffect } from "react";
-import { createWorkspace } from "../../../api/workspaces";
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Switch, FormControlLabel, RadioGroup, Radio, Typography } from "@mui/material";
+import { useState, useEffect } from 'react';
+import { updateWorkspace } from "../../api/workspaces";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSnackbar } from "../../providers/SnackbarProvider";
+
+interface Workspace {
+  _id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  settings?: {
+    allowGuestAccess?: boolean;
+    defaultProjectVisibility?: "public" | "private";
+  };
+  isActive?: boolean;
+}
 
 interface Props {
   open: boolean;
   onClose: () => void;
+  workspace: Workspace | null;
 }
 
-export function CreateWorkspaceModal({ open, onClose }: Props) {
+export function EditWorkspaceModal({ open, onClose, workspace }: Props) {
   const queryClient = useQueryClient();
+  const { showSnackbar } = useSnackbar();
 
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
-
   const [allowGuestAccess, setAllowGuestAccess] = useState(false);
-  const [defaultVisibility, setDefaultVisibility] =
-    useState<"public" | "private">("private");
-
+  const [defaultVisibility, setDefaultVisibility] = useState<"public" | "private">("private");
   const [isActive, setIsActive] = useState(true);
-
   const [loading, setLoading] = useState(false);
 
-  // Auto-generate slug
+  // Populate form when workspace changes
   useEffect(() => {
-    setSlug(
-      name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "")
-    );
-  }, [name]);
+    if (workspace) {
+      setName(workspace.name || "");
+      setSlug(workspace.slug || "");
+      setDescription(workspace.description || "");
+      setAllowGuestAccess(workspace.settings?.allowGuestAccess || false);
+      setDefaultVisibility(workspace.settings?.defaultProjectVisibility || "private");
+      setIsActive(workspace.isActive ?? true);
+    }
+  }, [workspace]);
 
   const handleSubmit = async () => {
-    if (!name.trim() || !slug.trim()) return;
+    if (!name.trim() || !slug.trim() || !workspace) return;
 
     setLoading(true);
 
     try {
-      await createWorkspace({
+      await updateWorkspace(workspace._id, {
         name,
         slug,
         description,
@@ -63,18 +64,10 @@ export function CreateWorkspaceModal({ open, onClose }: Props) {
       });
 
       queryClient.invalidateQueries({ queryKey: ["workspaces"] });
-
+      showSnackbar("Workspace updated successfully", "success");
       onClose();
-
-      // Reset form
-      setName("");
-      setSlug("");
-      setDescription("");
-      setAllowGuestAccess(false);
-      setDefaultVisibility("private");
-      setIsActive(true);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      showSnackbar(err?.response?.data?.message || "Failed to update workspace", "error");
     } finally {
       setLoading(false);
     }
@@ -98,11 +91,10 @@ export function CreateWorkspaceModal({ open, onClose }: Props) {
         }
       }}
     >
-      <DialogTitle>Create Workspace</DialogTitle>
+      <DialogTitle>Edit Workspace</DialogTitle>
 
       <DialogContent>
         <div className="flex flex-col gap-4 pt-2">
-          {/* Name */}
           <TextField
             label="Workspace Name"
             fullWidth
@@ -111,7 +103,6 @@ export function CreateWorkspaceModal({ open, onClose }: Props) {
             autoFocus
           />
 
-          {/* Slug */}
           <TextField
             label="Slug"
             fullWidth
@@ -120,7 +111,6 @@ export function CreateWorkspaceModal({ open, onClose }: Props) {
             helperText="This will appear in the workspace URL"
           />
 
-          {/* Description */}
           <TextField
             label="Description"
             fullWidth
@@ -130,7 +120,6 @@ export function CreateWorkspaceModal({ open, onClose }: Props) {
             onChange={(e) => setDescription(e.target.value)}
           />
 
-          {/* Allow Guest Access */}
           <FormControlLabel
             control={
               <Switch
@@ -141,7 +130,6 @@ export function CreateWorkspaceModal({ open, onClose }: Props) {
             label="Allow Guest Access"
           />
 
-          {/* Default Project Visibility */}
           <div>
             <Typography variant="body1" className="mb-1">
               Default Project Visibility
@@ -165,7 +153,6 @@ export function CreateWorkspaceModal({ open, onClose }: Props) {
             </RadioGroup>
           </div>
 
-          {/* Workspace Active Toggle */}
           <FormControlLabel
             control={
               <Switch
@@ -187,11 +174,9 @@ export function CreateWorkspaceModal({ open, onClose }: Props) {
           disabled={!name || !slug || loading}
           onClick={handleSubmit}
         >
-          {loading ? "Creating..." : "Create Workspace"}
+          {loading ? "Updating..." : "Update Workspace"}
         </Button>
       </DialogActions>
     </Dialog>
   );
 }
-
-export default CreateWorkspaceModal;

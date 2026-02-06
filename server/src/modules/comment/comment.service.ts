@@ -2,12 +2,12 @@ import { CommentRepository } from './comment.repository.js';
 import { TaskService } from '../task/task.service.js';
 import { IComment } from './comment.IComment.js';
 import { AppError } from '../../core/errors/AppError.js';
-import { Schema } from 'mongoose';
+import { Types } from "mongoose";
 
 export interface CreateCommentDTO {
-    taskId: Schema.Types.ObjectId;
+    taskId: Types.ObjectId;
     content: string;
-    parentCommentId ? : Schema.Types.ObjectId;
+    parentCommentId?: Types.ObjectId | string | null;
 }
 
 export interface UpdateCommentDTO {
@@ -35,7 +35,8 @@ export class CommentService {
 
         // Verify parent comment exists and belongs to same task
         if (data.parentCommentId) {
-            const parentComment = await this.repository.findById(data.parentCommentId);
+            const parentCommentId = data.parentCommentId.toString();
+            const parentComment = await this.repository.findById(parentCommentId);
 
             if (!parentComment) {
                 throw AppError.notFound("Parent comment not found");
@@ -45,14 +46,18 @@ export class CommentService {
                 throw AppError.badRequest("Parent comment must belong to the same task");
             }
         }
-        const aid = new Schema.Types.ObjectId(authorId);
-        const pid = data.parentCommentId == undefined ? new Schema.Types.ObjectId("") : data.parentCommentId;
+
+        const aid = new Types.ObjectId(authorId);
+        const parentCommentId = data.parentCommentId
+            ? new Types.ObjectId(data.parentCommentId.toString())
+            : undefined;
+
         const comment = await this.repository.create({
             taskId: data.taskId,
             workspaceId: task.workspaceId,
             authorId: aid,
             content: data.content.trim(),
-            parentCommentId: pid,
+            ...(parentCommentId ? { parentCommentId } : {}),
             isEdited: false
         });
 

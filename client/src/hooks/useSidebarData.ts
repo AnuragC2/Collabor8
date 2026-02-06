@@ -1,11 +1,11 @@
 import { useQuery, useQueries } from "@tanstack/react-query";
-import { getMyWorkspaces, getWorkspaceProjects } from "../api/workspaces";
+import { getWorkspaces, getWorkspaceProjects } from "../api/workspaces";
 
 export const useSidebarData = () => {
   // Fetch all workspaces
   const workspacesQuery = useQuery({
     queryKey: ["workspaces"],
-    queryFn: getMyWorkspaces,
+    queryFn: getWorkspaces,
   });
 
   // A helper: for the Sidebar to call useQueries()

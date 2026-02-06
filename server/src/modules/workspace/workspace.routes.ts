@@ -10,6 +10,28 @@ const controller = new WorkspaceController();
 // All routes require authentication
 workspaceroutes.use(requireAuth);
 
+
+// Invite management
+workspaceroutes.post(
+  "/:workspaceId/invites",
+  requireWorkspaceRole(WorkspaceRole.Owner, WorkspaceRole.Admin),
+  controller.createInvite
+);
+
+workspaceroutes.get(
+  "/:workspaceId/invites",
+  requireWorkspaceRole(WorkspaceRole.Owner, WorkspaceRole.Admin),
+  controller.listInvites
+);
+
+workspaceroutes.post("/invites/accept", controller.acceptInvite);
+
+workspaceroutes.post(
+  "/:workspaceId/invites/:inviteId/revoke",
+  requireWorkspaceRole(WorkspaceRole.Owner, WorkspaceRole.Admin),
+  controller.revokeInvite
+);
+
 // Create workspace
 workspaceroutes.post("/", controller.createWorkspace);
 

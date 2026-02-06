@@ -1,0 +1,15 @@
+// server/tsconfig.json
+{
+  "compilerOptions": {
+    // ... other essential settings like target, module, etc.
+    "moduleResolution": "node", // Use 'node' or 'nodenext' for ts-node/Node.js
+    "module": "NodeNext",      // Recommended for modern Node.js ESM projects
+    "allowImportingTsExtensions": true, // <--- THIS MUST BE TRUE
+    "esModuleInterop": true,
+    // When using ES Modules ("type": "module" in package.json)
+    "resolveJsonModule": true,
+    "verbatimModuleSyntax": true,
+    "outDir": "./dist" // Specify an output directory
+  },
+  "include": ["src/**/*"] // Make sure it includes your source files
+}

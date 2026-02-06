@@ -4,7 +4,7 @@ import { TaskStatus } from "./task.taskStatus.js";
 import { TaskPriority } from "./task.taskPriority.js";
 import { TaskType } from "./task.taskType.js";
 import { AppError } from "../../core/errors/AppError.js";
-import { Schema } from 'mongoose';
+import { Types } from "mongoose";
 
 export class TaskController {
     private service: TaskService;
@@ -38,8 +38,8 @@ export class TaskController {
 
             const reporterId = req.user!.id.toString();
 
-            const pid = new Schema.Types.ObjectId(projectId);
-            const rid = new Schema.Types.ObjectId(reporterId);
+            const pid = new Types.ObjectId(projectId);
+            const rid = new Types.ObjectId(reporterId);
             const task = await this.service.createTask({
                     projectId: pid,
                     title,

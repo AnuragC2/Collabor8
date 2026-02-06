@@ -167,4 +167,8 @@ export class ProjectRepository {
   async delete(id: string | Schema.Types.ObjectId): Promise<void> {
     await Project.findByIdAndDelete(id);
   }
+
+  async deleteByWorkspace(workspaceId: string | Schema.Types.ObjectId): Promise<void> {
+    await Project.deleteMany({ workspaceId });
+  }
 }

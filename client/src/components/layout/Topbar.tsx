@@ -1,15 +1,20 @@
 import { AppBar, Toolbar, IconButton, Typography } from "@mui/material";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
+import LogoutIcon from "@mui/icons-material/Logout";
 import { useThemeMode } from "../../providers/ThemeProvider";
 import { useSidebar } from "../../providers/SidebarProvider";
 import avatar from './avatar.png'
+import { useAuth } from "../../providers/AuthProvider";
+import { useNavigate } from "react-router-dom";
 
 const DRAWER_WIDTH = 240;
 
 export default function Topbar() {
   const { mode, setMode } = useThemeMode();
   const { open } = useSidebar();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   const toggleTheme = () => setMode(mode === "light" ? "dark" : "light");
 
@@ -45,6 +50,16 @@ export default function Topbar() {
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center" }}>
             <IconButton onClick={toggleTheme}>
             {mode === "light" ? <DarkModeIcon /> : <LightModeIcon />}
+            </IconButton>
+
+            <IconButton
+              onClick={() => {
+                logout();
+                navigate("/login", { replace: true });
+              }}
+              aria-label="logout"
+            >
+              <LogoutIcon />
             </IconButton>
 
             <IconButton sx={{ p: 0.5 }}>

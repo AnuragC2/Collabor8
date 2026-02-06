@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { ProjectService } from "./project.service.js";
 import { AppError } from "../../core/errors/AppError.js";
 import { projectIdParamsSchema } from "./project.schemas.js";
+import { getObjectIdString } from "../../utils/id.ts";
 
 export const requireProjectMember = async (
   req: Request,
@@ -44,7 +45,7 @@ export const requireProjectLead = async (
       const project = await projectService.getProjectById(projectId, userId);
       const workspaceService = new (await import("../workspace/workspace.service.js")).WorkspaceService();
       const workspaceRole = await workspaceService.getMemberRole(
-        project.workspaceId.toString(),
+        getObjectIdString(project.workspaceId),
         userId
       );
 

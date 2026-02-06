@@ -6,17 +6,19 @@ import { TaskStatus } from "./task.taskStatus.js";
 import { TaskPriority } from "./task.taskPriority.js";
 import { TaskType } from "./task.taskType.js";
 import { AppError } from "../../core/errors/AppError.js";
-import { Schema } from 'mongoose';
+import { Types } from "mongoose";
 import { Project } from "../project/project.model.js";
+import { CommentRepository } from "../comment/comment.repository.js";
+import { getObjectIdString } from "../../utils/id.js";
 
 export interface CreateTaskDTO {
-    projectId: Schema.Types.ObjectId;
+    projectId: Types.ObjectId;
     title: string;
     description ? : string;
     type ? : TaskType;
     priority ? : TaskPriority;
-    assigneeId ? : Schema.Types.ObjectId;
-    parentTaskId ? : Schema.Types.ObjectId;
+    assigneeId ? : Types.ObjectId;
+    parentTaskId ? : Types.ObjectId;
     labels ? : string[];
     storyPoints ? : number;
     dueDate ? : Date;
@@ -37,14 +39,16 @@ export class TaskService {
     private repository: TaskRepository;
     private projectService: ProjectService;
     private workspaceService: WorkspaceService;
+    private commentRepository: CommentRepository;
 
     constructor() {
         this.repository = new TaskRepository();
         this.projectService = new ProjectService();
         this.workspaceService = new WorkspaceService();
+        this.commentRepository = new CommentRepository();
     }
 
-    async createTask(data: CreateTaskDTO, reporterId: Schema.Types.ObjectId): Promise < ITask > {
+    async createTask(data: CreateTaskDTO, reporterId: Types.ObjectId): Promise < ITask > {
         // Get project to verify access and get workspace
         const project = await Project.findById(data.projectId);
         if (!project) {
@@ -53,36 +57,36 @@ export class TaskService {
 
         // Verify reporter has access to project
         await this.projectService.verifyProjectAccess(
-            data.projectId.toString(),
+            getObjectIdString(data.projectId),
             reporterId.toString()
         );
 
         // Verify assignee is project member (if assigned)
         if (data.assigneeId) {
             await this.projectService.verifyProjectAccess(
-                data.projectId.toString(),
-                data.assigneeId.toString()
+                getObjectIdString(data.projectId),
+                getObjectIdString(data.assigneeId),
             );
         }
 
         // Verify parent task exists and belongs to same project
         if (data.parentTaskId) {
-            const parentTask = await this.repository.findById(data.parentTaskId);
+            const parentTask = await this.repository.findById(getObjectIdString(data.parentTaskId));
             if (!parentTask) {
                 throw AppError.notFound("Parent task not found");
             }
-            if (parentTask.projectId.toString() !== data.projectId.toString()) {
+            if (parentTask.projectId.toString() !== getObjectIdString(data.projectId).toString()) {
                 throw AppError.badRequest("Parent task must belong to the same project");
             }
         }
 
         // Generate task number and key
-        const taskNumber = await this.repository.getNextTaskNumber(data.projectId);
+        const taskNumber = await this.repository.getNextTaskNumber(getObjectIdString(data.projectId));
         const taskKey = `${project.key}-${taskNumber}`;
 
         const task = await this.repository.create({
             ...data,
-            workspaceId: project.workspaceId,
+            workspaceId: getObjectIdString(project.workspaceId),
             reporterId,
             taskNumber,
             key: taskKey,
@@ -95,14 +99,14 @@ export class TaskService {
     }
 
     async getTaskById(taskId: string, userId: string): Promise < ITask > {
-        const task = await this.repository.findById(taskId);
+        const task = await this.repository.findById(getObjectIdString(taskId));
         if (!task) {
             throw AppError.notFound("Task not found");
         }
 
         // Verify user has access to project
         await this.projectService.verifyProjectAccess(
-            task.projectId.toString(),
+            getObjectIdString(task.projectId).toString(),
             userId
         );
 
@@ -116,7 +120,7 @@ export class TaskService {
         }
 
         await this.projectService.verifyProjectAccess(
-            task.projectId.toString(),
+            getObjectIdString(task.projectId).toString(),
             userId
         );
 
@@ -198,7 +202,7 @@ export class TaskService {
         userId: string,
         newStatus: TaskStatus
     ): Promise < ITask > {
-        const task = await this.repository.findById(taskId);
+        const task = await this.repository.findById(getObjectIdString(taskId));
         if (!task) {
             throw AppError.notFound("Task not found");
         }
@@ -209,7 +213,7 @@ export class TaskService {
         // Validate status transition
         this.validateStatusTransition(task.status, newStatus);
 
-        const updatedTask = await this.repository.updateStatus(taskId, newStatus);
+        const updatedTask = await this.repository.updateStatus(getObjectIdString(taskId), newStatus);
         if (!updatedTask) {
             throw AppError.notFound("Task not found");
         }
@@ -282,6 +286,10 @@ export class TaskService {
             throw AppError.forbidden("Only task reporter or project lead can delete tasks");
         }
 
+        const subtasks = await this.repository.findSubtasks(taskId);
+        const taskIdsToDelete = [taskId, ...subtasks.map(task => task._id.toString())];
+
+        await this.commentRepository.deleteByTaskIds(taskIdsToDelete);
         await this.repository.delete(taskId);
     }
 

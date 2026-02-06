@@ -1,123 +1,125 @@
+import { useState } from "react";
 import {
   Drawer,
   List,
   ListItemButton,
   ListItemText,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Button,
-  Typography,
   CircularProgress,
 } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AddIcon from "@mui/icons-material/Add";
 import { useSidebar } from "../../providers/SidebarProvider";
 import { useSidebarData } from "../../hooks/useSidebarData";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { CreateWorkspaceModal } from '../layout/workspace/CreateWorkspaceModal'
+import { CreateWorkspaceModal } from "../workspace/CreateWorkspaceModal";
+import { WorkspaceMenu } from "../workspace/WorkspaceMenu";
+import { DeleteWorkspaceModal } from "../workspace/DeleteWorkspaceModal";
+import { EditWorkspaceModal } from "../workspace/EditWorkSpaceModal";
+
+interface Workspace {
+  _id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  settings?: {
+    allowGuestAccess?: boolean;
+    defaultProjectVisibility?: "public" | "private";
+  };
+  isActive?: boolean;
+}
 
 export default function Sidebar() {
   const { open, setOpen } = useSidebar();
-  const { workspacesQuery, useProjectsQueries } = useSidebarData();
+  const { workspacesQuery } = useSidebarData();
+
   const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [openEditModal, setOpenEditModal] = useState(false);
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
   const navigate = useNavigate();
 
-  const workspaces = workspacesQuery.data || [];
+  const workspaces: Workspace[] = workspacesQuery.data || [];
 
-  // Fetch all workspace projects in parallel using useQueries
-  const projectsQueries = useProjectsQueries(workspaces.map((w: {_id: string }) => w._id));
+  const handleEdit = (workspace: Workspace) => {
+    setSelectedWorkspace(workspace);
+    setOpenEditModal(true);
+  };
+
+  const handleDelete = (workspace: Workspace) => {
+    setSelectedWorkspace(workspace);
+    setOpenDeleteModal(true);
+  };
 
   return (
     <>
-        <Drawer
+      <Drawer
         variant="persistent"
         open={open}
         onClose={() => setOpen(false)}
         sx={{
-            width: 260,
-            "& .MuiDrawer-paper": {
+          width: 260,
+          "& .MuiDrawer-paper": {
             width: 260,
             boxSizing: "border-box",
-            },
+          },
         }}
-        >
+      >
         <div className="p-4 text-xl font-semibold border-b">Workspaces</div>
 
         <List className="overflow-y-auto flex-1">
-            {workspacesQuery.isLoading && (
+          {workspacesQuery.isLoading && (
             <div className="flex justify-center p-4">
-                <CircularProgress size={24} />
+              <CircularProgress size={24} />
             </div>
-            )}
+          )}
 
-            {workspaces.map((ws: {_id: string; name: string;}, index: number) => {
-            const projectQuery = projectsQueries[index];
-            const projects = projectQuery?.data || [];
-
+          {workspaces.map((ws) => {
             return (
-                <Accordion key={ws._id} disableGutters>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography className="font-medium">{ws.name}</Typography>
-                </AccordionSummary>
+              <ListItemButton
+                key={ws._id}
+                onClick={() => navigate(`/workspace/${ws._id}`)}
+                sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+              >
+                <ListItemText primary={ws.name} />
 
-                <AccordionDetails className="pl-3">
-                    {/* Workspace Overview */}
-                    <ListItemButton
-                    onClick={() => navigate(`/workspace/${ws._id}`)}
-                    >
-                    <ListItemText primary="Workspace Overview" />
-                    </ListItemButton>
-
-                    {/* Projects */}
-                    {projectQuery?.isLoading ? (
-                    <Typography className="text-sm text-gray-500 pl-3">
-                        Loading projects...
-                    </Typography>
-                    ) : (
-                    projects.map((project: any) => (
-                        <ListItemButton
-                        key={project._id}
-                        sx={{ pl: 2 }}
-                        onClick={() => navigate(`/project/${project._id}`)}
-                        >
-                        <ListItemText primary={project.name} />
-                        </ListItemButton>
-                    ))
-                    )}
-
-                    {/* Add project */}
-                    <Button
-                    startIcon={<AddIcon />}
-                    size="small"
-                    sx={{ mt: 1, ml: 1 }}
-                    onClick={() => navigate(`/workspace/${ws._id}/new-project`)}
-                    >
-                    Add Project
-                    </Button>
-                </AccordionDetails>
-                </Accordion>
+                {/* Keep the WorkspaceMenu but prevent its clicks from triggering navigation */}
+                <div onClick={(e) => e.stopPropagation()}>
+                  <WorkspaceMenu
+                    workspaceId={ws._id}
+                    workspaceName={ws.name}
+                    onEdit={() => handleEdit(ws)}
+                    onDelete={() => handleDelete(ws)}
+                  />
+                </div>
+              </ListItemButton>
             );
-            })}
+          })}
         </List>
 
         {/* Add Workspace Button */}
         <div className="p-4 border-t">
-            <Button
-                fullWidth
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setOpenCreateModal(true)}
-                >
-                Add Workspace
-            </Button>
+          <Button
+            fullWidth
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setOpenCreateModal(true)}
+          >
+            Add Workspace
+          </Button>
         </div>
-        </Drawer>
-        <CreateWorkspaceModal
-            open={openCreateModal}
-            onClose={() => setOpenCreateModal(false)}
-        />
+      </Drawer>
+
+      {/* Modals */}
+      <CreateWorkspaceModal open={openCreateModal} onClose={() => setOpenCreateModal(false)} />
+
+      <EditWorkspaceModal open={openEditModal} onClose={() => setOpenEditModal(false)} workspace={selectedWorkspace} />
+
+      <DeleteWorkspaceModal
+        open={openDeleteModal}
+        onClose={() => setOpenDeleteModal(false)}
+        workspaceId={selectedWorkspace?._id || null}
+        workspaceName={selectedWorkspace?.name || null}
+      />
     </>
   );
 }

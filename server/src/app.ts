@@ -5,6 +5,7 @@ import { errorHandler } from "./core/middleware/errorHandler.js";
 import userRoutes from "./modules/user/user.routes.js";
 import  taskRoutes  from './modules/task/task.routes.js'
 import projectRoutes from "./modules/project/project.routes.js";
+import commentRoutes from "./modules/comment/comment.routes.js";
 const app = express();
 
 const allowedDomains = [
@@ -42,6 +43,7 @@ app.use("/api/v1/workspace", workspaceroutes)
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/project", projectRoutes);
 app.use("/api/v1/task", taskRoutes);
+app.use("/api/v1/comment", commentRoutes);
 
 app.use(errorHandler);
 

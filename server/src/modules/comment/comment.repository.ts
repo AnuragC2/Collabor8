@@ -89,6 +89,19 @@ export class CommentRepository {
     await this.deleteCommentAndReplies(id);
   }
 
+  async deleteByTaskIds(
+    taskIds: Array<string | Schema.Types.ObjectId>
+  ): Promise<void> {
+    if (!taskIds.length) return;
+    await Comment.deleteMany({ taskId: { $in: taskIds } });
+  }
+
+  async deleteByWorkspace(
+    workspaceId: string | Schema.Types.ObjectId
+  ): Promise<void> {
+    await Comment.deleteMany({ workspaceId });
+  }
+
   private async deleteCommentAndReplies(
     commentId: string | Schema.Types.ObjectId
   ): Promise<void> {
